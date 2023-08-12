@@ -150,16 +150,15 @@ func (h *Header) Unmarshal(buf []byte) (n int, err error) { //nolint:gocognit
 		extensionLength := int(binary.BigEndian.Uint16(buf[n:])) * 4
 		n += 2
 
-		if expected := n + extensionLength; len(buf) < expected {
-			return n, fmt.Errorf("size %d < %d: %w",
-				len(buf), expected,
-				errHeaderSizeInsufficientForExtension,
-			)
-		}
-
 		switch h.ExtensionProfile {
 		// RFC 8285 RTP One Byte Header Extension
 		case extensionProfileOneByte:
+			if expected := n + extensionLength + 1; len(buf) < expected {
+				return n, fmt.Errorf("size %d < %d: %w",
+					len(buf), expected,
+					errHeaderSizeInsufficientForExtension,
+				)
+			}
 			end := n + extensionLength
 			for n < end {
 				if buf[n] == 0x00 { // padding
@@ -175,6 +174,13 @@ func (h *Header) Unmarshal(buf []byte) (n int, err error) { //nolint:gocognit
 					break
 				}
 
+				if expected := n + payloadLen; len(buf) < expected {
+					return n, fmt.Errorf("size %d < %d: %w",
+						len(buf), expected,
+						errHeaderSizeInsufficientForExtension,
+					)
+				}
+
 				extension := Extension{id: extid, payload: buf[n : n+payloadLen]}
 				h.Extensions = append(h.Extensions, extension)
 				n += payloadLen
@@ -182,6 +188,12 @@ func (h *Header) Unmarshal(buf []byte) (n int, err error) { //nolint:gocognit
 
 		// RFC 8285 RTP Two Byte Header Extension
 		case extensionProfileTwoByte:
+			if expected := n + extensionLength + 2; len(buf) < expected {
+				return n, fmt.Errorf("size %d < %d: %w",
+					len(buf), expected,
+					errHeaderSizeInsufficientForExtension,
+				)
+			}
 			end := n + extensionLength
 			for n < end {
 				if buf[n] == 0x00 { // padding
@@ -194,6 +206,13 @@ func (h *Header) Unmarshal(buf []byte) (n int, err error) { //nolint:gocognit
 
 				payloadLen := int(buf[n])
 				n++
+
+				if expected := n + payloadLen; len(buf) < expected {
+					return n, fmt.Errorf("size %d < %d: %w",
+						len(buf), expected,
+						errHeaderSizeInsufficientForExtension,
+					)
+				}
 
 				extension := Extension{id: extid, payload: buf[n : n+payloadLen]}
 				h.Extensions = append(h.Extensions, extension)
