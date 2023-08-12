@@ -516,6 +516,9 @@ func (p *Packet) MarshalTo(buf []byte) (n int, err error) {
 	m := copy(buf[n:], p.Payload)
 
 	if p.Header.Padding {
+		if p.PaddingSize == 0 {
+			return 0, errInvalidPaddingSize
+		}
 		buf[n+m+int(p.PaddingSize-1)] = p.PaddingSize
 	}
 
